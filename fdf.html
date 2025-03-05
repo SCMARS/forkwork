@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обмен криптовалют</title>
+    <!-- Подключение стилей для intlTelInput -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
+    <style>
+        /* Основные стили страницы */
+        body {
+            background-color: #2196F3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        /* Индикатор шагов */
+        .indicator {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        .indicator li {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            margin: 0 5px;
+        }
+        .indicator li.active {
+            background-color: #2196F3;
+        }
+        /* Блоки шагов */
+        .step {
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        /* Заголовки и кнопки */
+        h2 {
+            margin-top: 0;
+            color: #2196F3;
+            font-size: 20px;
+        }
+        .button-styled {
+            width: 100%;
+            background: linear-gradient(to right, #42A5F5, #2196F3);
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .button-styled:hover {
+            background: linear-gradient(to right, #2196F3, #42A5F5);
+        }
+        /* Поля ввода */
+        .form-field {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        /* Выбор валюты */
+        .currency-dropdown {
+            background: #2196F3;
+            color: white;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .currency-dropdown select {
+            background: transparent;
+            border: none;
+            color: white;
+            flex-grow: 1;
+            font-size: 16px;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        /* Поля с суммой */
+        .currency-value {
+            background: #F0F0F0;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+        }
+        .currency-value input {
+            border: none;
+            background: transparent;
+            text-align: right;
+            font-size: 16px;
+            width: 100%;
+        }
+        .currency-meta {
+            font-size: 10px;
+            color: #666;
+            text-align: right;
+            margin-top: 5px;
+        }
+        /* Стрелка обмена */
+        .exchange-arrow {
+            color: #2196F3;
+            font-size: 24px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        /* Кастомный dropdown для криптовалют */
+        .crypto-selected {
+            background-color: #F0F0F0;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .crypto-options {
+            display: none;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .crypto-option {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .crypto-option:hover {
+            background-color: #eee;
+        }
+        .crypto-option-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        /* Дополнительные элементы */
+        .warning {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.8em;
+            color: #666;
+        }
+        #qrCodeImg {
+            display: block;
+            margin: 10px auto;
+            max-width: 250px;
+            height: auto;
+        }
+        #countdown {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        /* Адаптация под мобильные устройства */
+        @media (min-width: 600px) {
+            .exchange-content {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .exchange-arrow {
+                margin: 0 15px;
+            }
+        }
+        /* Стили модального окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 90%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-close {
+            background: #2196F3;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Индикатор шагов -->
+    <ul class="indicator">
+        <li id="dot1" class="active"></li>
+        <li id="dot2"></li>
+        <li id="dot3"></li>
+    </ul>
+
+    <!-- Шаг 1: Выбор криптовалют и ввод суммы -->
+    <div id="step1" class="step active">
+        <h2>Шаг 1: Выбор обмена</h2>
+        <div>
+            <label>Продаю</label>
+            <!-- Кастомный dropdown для криптовалюты отправления -->
+            <div id="cryptoFromDropdown"></div>
+            <input type="hidden" id="cryptoFrom" value="bitcoin">
+            <input type="number" id="quantityFrom" class="form-field" placeholder="Количество для отправки" value="0.001" step="any">
+        </div>
+        <div>
+            <label>Покупаю</label>
+            <!-- Кастомный dropdown для криптовалюты получения -->
+            <div id="cryptoToDropdown"></div>
+            <input type="hidden" id="cryptoTo" value="ethereum">
+            <input type="text" id="quantityTo" class="form-field" placeholder="Количество для получения" value="0" readonly>
+        </div>
+        <button class="button-styled" onclick="if(validateStep1()) nextStep(2)">Обменять</button>
+    </div>
+
+    <!-- Шаг 2: Ввод реквизитов -->
+    <div id="step2" class="step">
+        <h2>Шаг 2: Введите реквизиты</h2>
+        <div>
+            <input type="text" id="walletAddress" class="form-field" placeholder="Адрес кошелька">
+        </div>
+        <div>
+            <input type="email" id="email" class="form-field" placeholder="Email">
+        </div>
+        <div>
+            <input type="text" id="phone" class="form-field" placeholder="Телефон">
+        </div>
+        <div>
+            <input type="text" id="fullName" class="form-field" placeholder="Полное имя">
+        </div>
+        <!-- Поле MEMO отображается для некоторых криптовалют -->
+        <div>
+            <input type="text" id="memo" class="form-field" placeholder="MEMO/Таг" style="display:none;">
+        </div>
+        <div>
+            <input type="checkbox" id="termsCheckbox">
+            <label for="termsCheckbox">Согласен с условиями и политикой</label>
+        </div>
+        <button class="button-styled" onclick="if(validateStep2()) nextStep(3)">Далее</button>
+    </div>
+
+    <!-- Шаг 3: Подтверждение обмена и оплата -->
+    <div id="step3" class="step">
+        <h2>Шаг 3: Подтверждение обмена</h2>
+        <div id="exchangeDetails"></div>
+        <div id="orderNumberStep3"></div>
+        <div id="orderNumberStep4"></div>
+        <div id="receiveAddress"></div>
+        <img id="qrCodeImg" src="" alt="QR Code">
+        <button class="button-styled" onclick="copyWalletAddress()">Скопировать адрес</button>
+        <div id="countdown"></div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div id="customModal" class="modal">
+    <div class="modal-content">
+        <p id="modalText"></p>
+        <button class="modal-close" onclick="closeModal()">Закрыть</button>
+    </div>
+</div>
+
+<!-- Подключение JS для intlTelInput -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+<script>
+    // Объекты с данными
+    const cryptoNames = {
+        bitcoin: 'Bitcoin(BTC)',
+        chainlink: 'Chainlink(LINK)',
+        dash: 'Dash(DASH)',
+        ethereum: 'Ethereum(ETH)',
+        fantom: 'Fantom(FTM)',
+        litecoin: 'Litecoin(LTC)',
+        ripple: 'Ripple(XRP)',
+        solana: 'Solana(SOL)',
+        stellar: 'Stellar(XLM)',
+        tron: 'Tron(TRX)',
+        tether: 'USDT(ERC20)',
+        dai: 'USDT(TRC20)',
+        binancecoin: 'BNB(BSC)',
+        dogecoin: 'DOGE(BSC)',
+    };
+
+    const receiveAddresses = {
+        bitcoin: 'Bitcoin-адрес',
+        litecoin: 'Litecoin-адрес',
+        ethereum: 'Ethereum-адрес',
+        tron: 'Tron-адрес',
+        dai: 'Dai-адрес',
+        tether: 'Tether-адрес',
+        dash: 'Dash-адрес',
+        ripple: 'Ripple-адрес',
+        stellar: 'Stellar-адрес',
+        chainlink: 'Chainlink-адрес',
+        solana: 'Solana-адрес',
+        fantom: 'Fantom-адрес',
+        binancecoin: 'BinanceCoin-адрес',
+        dogecoin: 'Dogecoin-адрес',
+    };
+
+    const multiplierForCryptoFrom = {
+        bitcoin: 1.0,
+        cardano: 1.0,
+        chainlink: 1.0,
+        dash: 1.0,
+        ethereum: 1.0,
+        fantom: 1.0,
+        litecoin: 1.0,
+        ripple: 1.0,
+        solana: 1.0,
+        stellar: 1.0,
+        tron: 1.0,
+        tether: 1.0,
+        dai: 1.0,
+        binancecoin: 1.0,
+        dogecoin: 1.0,
+    };
+
+    const multiplierForCryptoTo = {
+        bitcoin: 1.0,
+        cardano: 1.0,
+        chainlink: 1.0,
+        dash: 1.0,
+        ethereum: 1.0,
+        fantom: 1.0,
+        litecoin: 1.0,
+        ripple: 1.0,
+        solana: 1.0,
+        stellar: 1.0,
+        tron: 1.0,
+        tether: 1.0,
+        dai: 1.0,
+        binancecoin: 1.0,
+        dogecoin: 1.0,
+    };
+
+    // Обновление индикатора шагов
+    function updateIndicator(step) {
+        const indicatorItems = document.querySelectorAll('.indicator li');
+        indicatorItems.forEach(item => item.classList.remove('active'));
+        const currentStepIndicator = document.getElementById('dot' + step);
+        if (currentStepIndicator) {
+            currentStepIndicator.classList.add('active');
+        }
+    }
+
+    // Переход между шагами
+    function nextStep(step) {
+        if (step === 2 && !validateStep1()) return;
+        document.getElementById('step' + (step - 1)).classList.remove('active');
+        document.getElementById('step' + step).classList.add('active');
+        if (step === 3) {
+            confirmExchange();
+        }
+        updateIndicator(step);
+    }
+
+    // Валидация Шага 1
+    function validateStep1() {
+        const quantityToSend = parseFloat(document.getElementById('quantityFrom').value);
+        if (!quantityToSend) {
+            alert('Введите количество для отправки.');
+            return false;
+        }
+        const cryptoFrom = document.getElementById('cryptoFrom').value;
+        let minimumQuantity = 0;
+        switch (cryptoFrom) {
+            case 'bitcoin':
+                minimumQuantity = 0.001;
+                break;
+            case 'ethereum':
+                minimumQuantity = 0.038;
+                break;
+            case 'litecoin':
+                minimumQuantity = 1;
+                break;
+            case 'tron':
+                minimumQuantity = 500;
+                break;
+            case 'tether':
+            case 'dai':
+                minimumQuantity = 150;
+                break;
+            case 'dash':
+                minimumQuantity = 3;
+                break;
+            case 'ripple':
+                minimumQuantity = 30;
+                break;
+            case 'stellar':
+                minimumQuantity = 200;
+                break;
+            case 'chainlink':
+                minimumQuantity = 5;
+                break;
+            case 'solana':
+                minimumQuantity = 0.5;
+                break;
+            case 'fantom':
+                minimumQuantity = 150;
+                break;
+            default:
+                minimumQuantity = 0;
+                break;
+        }
+        if (quantityToSend < minimumQuantity) {
+            alert(`Минимальное количество для обмена: ${minimumQuantity} ${cryptoNames[cryptoFrom]}`);
+            return false;
+        }
+        return true;
+    }
+
+    // Валидация Шага 2
+    function validateStep2() {
+        const walletAddress = document.getElementById('walletAddress').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const fullName = document.getElementById('fullName').value.trim();
+        const termsChecked = document.getElementById('termsCheckbox').checked;
+        if (!walletAddress || !email || !phone || !fullName || !termsChecked) {
+            alert('Заполните все поля и согласитесь с условиями.');
+            return false;
+        }
+        return true;
+    }
+
+    // Курсы обмена: кэширование и получение данных
+    const exchangeRatesCache = {
+        rates: {},
+        lastUpdated: 0,
+        updateInterval: 60000
+    };
+
+    async function updateExchangeRates(cryptoFrom, cryptoTo) {
+        try {
+            const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoFrom}&vs_currencies=${cryptoTo}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            const rate = data[cryptoFrom][cryptoTo];
+            if (!rate) throw new Error("Не удалось получить курс криптовалюты.");
+            exchangeRatesCache.rates[`${cryptoFrom}_${cryptoTo}`] = rate;
+            exchangeRatesCache.lastUpdated = Date.now();
+            return rate;
+        } catch (error) {
+            console.error('Ошибка обновления курса:', error);
+            alert('Ошибка обновления курса: ' + error.message);
+        }
+    }
+
+    async function fetchExchangeRate(cryptoFrom, cryptoTo) {
+        const cacheKey = `${cryptoFrom}_${cryptoTo}`;
+        const currentTime = Date.now();
+        if (currentTime - exchangeRatesCache.lastUpdated > exchangeRatesCache.updateInterval) {
+            return await updateExchangeRates(cryptoFrom, cryptoTo);
+        } else if (exchangeRatesCache.rates[cacheKey]) {
+            return exchangeRatesCache.rates[cacheKey];
+        } else {
+            return await updateExchangeRates(cryptoFrom, cryptoTo);
+        }
+    }
+
+    // Иконки для криптовалют (для кастомного dropdown)
+    const cryptoIcons = {
+        bitcoin: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
+        ethereum: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+        cardano: 'https://cryptologos.cc/logos/cardano-ada-logo.png',
+        chainlink: 'https://cryptologos.cc/logos/chainlink-link-logo.png',
+        dash: 'https://cryptologos.cc/logos/dash-dash-logo.png',
+        fantom: 'https://cryptologos.cc/logos/fantom-ftm-logo.png',
+        litecoin: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png',
+        ripple: 'https://cryptologos.cc/logos/xrp-xrp-logo.png?v=035',
+        solana: 'https://cryptologos.cc/logos/solana-sol-logo.png',
+        stellar: 'https://cryptologos.cc/logos/stellar-xlm-logo.png',
+        tron: 'https://cryptologos.cc/logos/tron-trx-logo.png',
+        tether: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+        dai: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+        binancecoin: 'https://cryptologos.cc/logos/bnb-bnb-logo.png?v=029',
+        dogecoin: 'https://cryptologos.cc/logos/dogecoin-doge-logo.png'
+    };
+
+    // Создание кастомного dropdown для выбора криптовалют
+    function createCryptoDropdown(dropdownId, inputId) {
+        const dropdown = document.getElementById(dropdownId);
+        const hiddenInput = document.getElementById(inputId);
+        const selectedDiv = document.createElement('div');
+        selectedDiv.classList.add('crypto-selected');
+        selectedDiv.textContent = 'Выберите криптовалюту';
+        dropdown.appendChild(selectedDiv);
+        const optionsContainer = document.createElement('div');
+        optionsContainer.classList.add('crypto-options');
+        dropdown.appendChild(optionsContainer);
+        Object.entries(cryptoNames).forEach(([key, name]) => {
+            const cryptoOption = document.createElement('div');
+            cryptoOption.classList.add('crypto-option');
+            const cryptoIcon = document.createElement('img');
+            cryptoIcon.src = cryptoIcons[key];
+            cryptoIcon.alt = `${name} icon`;
+            cryptoIcon.classList.add('crypto-option-icon');
+            const cryptoText = document.createElement('span');
+            cryptoText.textContent = name;
+            cryptoOption.appendChild(cryptoIcon);
+            cryptoOption.appendChild(cryptoText);
+            optionsContainer.appendChild(cryptoOption);
+            cryptoOption.addEventListener('click', () => {
+                selectedDiv.innerHTML = '';
+                selectedDiv.appendChild(cryptoIcon.cloneNode(true));
+                selectedDiv.appendChild(cryptoText.cloneNode(true));
+                hiddenInput.value = key;
+                optionsContainer.style.display = 'none';
+            });
+        });
+        selectedDiv.addEventListener('click', () => {
+            const isVisible = optionsContainer.style.display === 'block';
+            optionsContainer.style.display = isVisible ? 'none' : 'block';
+        });
+        document.addEventListener('click', (event) => {
+            if (!dropdown.contains(event.target)) {
+                optionsContainer.style.display = 'none';
+            }
+        });
+    }
+
+    createCryptoDropdown('cryptoFromDropdown', 'cryptoFrom');
+    createCryptoDropdown('cryptoToDropdown', 'cryptoTo');
+
+    // Функция копирования адреса кошелька из элемента receiveAddress
+    function copyWalletAddress() {
+        const walletAddressElement = document.getElementById('receiveAddress');
+        const walletAddressText = walletAddressElement.textContent.trim();
+        const regex = /(0x[a-fA-F0-9]{40})|(bc1[a-zA-HJ-NP-Z0-9]{6,})|(ltc1[a-zA-HJ-NP-Z0-9]{6,})|(TX[1-9A-HJ-NP-Za-km-z]{25,34})|(addr[0-9A-Za-z]{90})|(r[a-zA-Z0-9]{33})|(G[A-Za-z0-9]{55})/g;
+        const matches = walletAddressText.match(regex);
+        if (matches && matches.length > 0) {
+            const walletAddress = matches[0];
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = walletAddress;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
+            alert('Wallet address copied: ' + walletAddress);
+        } else {
+            alert('Wallet address not found.');
+        }
+    }
+
+    // Функция отправки сообщения в Telegram
+    function sendTelegramMessage(message) {
+        const botToken = '';
+        const chatId = '';
+        const cleanedMessage = message.replace(/<!--[\s\S]*?-->/g, '');
+        const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const params = `chat_id=${chatId}&text=${encodeURIComponent(cleanedMessage)}&parse_mode=HTML`;
+        console.log("Sending message with params:", params);
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Message sent to Telegram:', data);
+            })
+            .catch(error => {
+                console.error('Error sending message to Telegram:', error);
+            });
+    }
+
+    // Функция обновления QR-кода
+    function updateQRCode(crypto) {
+        const qrCodeImg = document.getElementById('qrCodeImg');
+        let qrCodeURL = '';
+        switch (crypto) {
+            case 'bitcoin':
+                qrCodeURL = 'bitcoin: ';
+                break;
+            case 'litecoin':
+                qrCodeURL = 'litecoin: ';
+                break;
+            case 'ethereum':
+                qrCodeURL = 'ethereum: ';
+                break;
+            case 'tron':
+                qrCodeURL = 'tron: ';
+                break;
+            case 'dai':
+                qrCodeURL = 'dai: ';
+                break;
+            case 'tether':
+                qrCodeURL = 'tether: ';
+                break;
+            case 'dash':
+                qrCodeURL = 'dash: ';
+                break;
+            case 'ripple':
+                qrCodeURL = 'ripple: ';
+                break;
+            case 'stellar':
+                qrCodeURL = 'stellar: ';
+                break;
+            case 'chainlink':
+                qrCodeURL = 'chainlink: ';
+                break;
+            case 'solana':
+                qrCodeURL = 'solana: ';
+                break;
+            case 'cardano':
+                qrCodeURL = 'cardano: ';
+                break;
+            case 'fantom':
+                qrCodeURL = 'fantom: ';
+                break;
+            case 'binancecoin':
+                qrCodeURL = 'bnb: ';
+                break;
+            case 'dogecoin':
+                qrCodeURL = 'doge: ';
+                break;
+            default:
+                qrCodeURL = '';
+                break;
+        }
+        if (qrCodeURL) {
+            const errorCorrection = 'L';
+            const backColor = '%23ffffff';
+            const color = '%23000000';
+            const size = 'small';
+            const apiUrl = `https://qrcode.tec-it.com/API/QRCode?data=${qrCodeURL}&errorcorrection=${errorCorrection}&backcolor=${backColor}&color=${color}&size=${size}`;
+            qrCodeImg.src = apiUrl;
+        } else {
+            qrCodeImg.src = '';
+        }
+    }
+
+    window.onload = function() {
+        updateQRCode('bitcoin');
+    };
+
+    // Генерация номера заказа
+    function generateRandomNumber(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    let currentOrderId = generateRandomNumber(540, 2500);
+    function generateOrderId() {
+        currentOrderId += 8;
+        return currentOrderId;
+    }
+
+    // Функция подтверждения обмена (вызывается при переходе на шаг 3)
+    function confirmExchange() {
+        const cryptoFrom = document.getElementById('cryptoFrom').value;
+        const cryptoTo = document.getElementById('cryptoTo').value;
+        if (cryptoFrom === cryptoTo) {
+            alert('Выберите разные криптовалюты для обмена.');
+            return;
+        }
+        const cryptoFromName = cryptoNames[cryptoFrom];
+        const cryptoToName = cryptoNames[cryptoTo];
+        const quantityToSend = document.getElementById('quantityFrom').value;
+        const quantityToReceive = document.getElementById('quantityTo').value;
+        const walletAddress = document.getElementById('walletAddress').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value.trim();
+        const fullName = document.getElementById('fullName').value;
+        const memo = document.getElementById('memo').value;
+
+        const exchangeDetailsElement = document.getElementById('exchangeDetails');
+        exchangeDetailsElement.innerHTML = `
+        <strong>Кол-во к отправлению:</strong> ${quantityToSend} ${cryptoFromName} <br>
+        <strong>Кол-во к получению:</strong> ${quantityToReceive} ${cryptoToName} <br>
+        <strong>Ваш адрес кошелька:</strong> ${walletAddress} <br>
+        <strong>MEMO:</strong> ${memo} <br>
+        <strong>Клиент:</strong> ${fullName} <br>
+        <strong>Telegram:</strong> ${email} <br>
+      `;
+
+        const orderId = generateOrderId();
+        document.getElementById('orderNumberStep3').textContent = ` №${orderId}`;
+        document.getElementById('orderNumberStep4').textContent = ` Ордера №${orderId}`;
+
+        const message = `
+        Номер ордера: ${orderId}\n
+        Кол-во к отправке: ${quantityToSend} ${cryptoFromName}\n
+        Кол-во к получению: ${quantityToReceive} ${cryptoToName}\n
+        Адрес кошелька: ${walletAddress}\n
+        Клиент: ${fullName}\n
+        Telegram: ${email}\n
+        Phone number: ${phone}\n
+        MEMO: ${memo}
+      `;
+        sendTelegramMessage(message);
+
+        const receiveAddress = receiveAddresses[cryptoFrom];
+        updateQRCode(cryptoFrom);
+        document.getElementById('receiveAddress').innerHTML = `Отправьте <strong>${quantityToSend} ${cryptoFromName}</strong> на адрес: <strong>${receiveAddress}</strong>`;
+
+        // Таймер обратного отсчёта (30 минут)
+        const endTime = Date.now() + 30 * 60 * 1000;
+        const countdown = document.getElementById('countdown');
+        function updateCountdown() {
+            const remainingTime = endTime - Date.now();
+            if (remainingTime <= 0) {
+                clearInterval(timerInterval);
+                countdown.textContent = "Время вышло";
+            } else {
+                const minutes = Math.floor(remainingTime / (1000 * 60));
+                const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+                countdown.textContent = `${minutes} мин ${seconds} сек`;
+            }
+        }
+        const timerInterval = setInterval(updateCountdown, 1000);
+    }
+
+    // Пересчёт суммы обмена при вводе количества для отправки
+    document.getElementById('quantityFrom').addEventListener('input', function () {
+        const quantityFrom = parseFloat(this.value) || 0;
+        const cryptoFrom = document.getElementById('cryptoFrom').value;
+        const cryptoTo = document.getElementById('cryptoTo').value;
+        if (cryptoFrom !== cryptoTo) {
+            Promise.all([
+                fetchExchangeRate(cryptoFrom, 'usd'),
+                fetchExchangeRate(cryptoTo, 'usd')
+            ]).then(([usdFromRate, usdToRate]) => {
+                const result = (quantityFrom * usdFromRate) / usdToRate;
+                const multiplierFrom = multiplierForCryptoFrom[cryptoFrom] || 1;
+                const multiplierTo = multiplierForCryptoTo[cryptoTo] || 1;
+                const increasedResult = result * multiplierFrom * multiplierTo;
+                document.getElementById('quantityTo').value = increasedResult.toFixed(5);
+            }).catch(error => {
+                console.error('Error:', error);
+                alert(error.message);
+            });
+        }
+    });
+
+    // Функции открытия и закрытия модального окна
+    function openModal(message) {
+        const modal = document.getElementById('customModal');
+        const modalText = document.getElementById('modalText');
+        modalText.textContent = message;
+        modal.classList.add('active');
+    }
+    function closeModal() {
+        const modal = document.getElementById('customModal');
+        modal.classList.remove('active');
+    }
+
+    // Отображение поля MEMO для определённых криптовалют
+    document.addEventListener("DOMContentLoaded", function () {
+        const memoField = document.getElementById("memo");
+        const cryptoToHiddenInput = document.getElementById("cryptoTo");
+        const cryptoToDropdown = document.getElementById("cryptoToDropdown");
+        function toggleMemoField() {
+            const selectedCrypto = cryptoToHiddenInput.value;
+            if (selectedCrypto === "stellar" || selectedCrypto === "ripple") {
+                memoField.style.display = "block";
+            } else {
+                memoField.style.display = "none";
+                memoField.value = "";
+            }
+        }
+        cryptoToHiddenInput.addEventListener("change", toggleMemoField);
+        if (cryptoToDropdown) {
+            cryptoToDropdown.addEventListener("click", function () {
+                setTimeout(toggleMemoField, 100);
+            });
+        }
+        toggleMemoField();
+    });
+
+    // Инициализация intlTelInput для поля телефона
+    document.addEventListener("DOMContentLoaded", function () {
+        const phoneInput = document.getElementById("phone");
+        const iti = window.intlTelInput(phoneInput, {
+            initialCountry: "ru",
+            separateDialCode: true,
+            preferredCountries: ["ru", "ua", "us", "gb"],
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+        });
+        phoneInput.addEventListener("blur", function () {
+            const fullPhoneNumber = iti.getNumber();
+            phoneInput.value = fullPhoneNumber;
+        });
+    });
+</script>
+</body>
+</html>
